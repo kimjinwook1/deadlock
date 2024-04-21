@@ -9,8 +9,16 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class HelloController {
     private final LongTransactionService longTransactionService;
+    private final LongTransactionService longTransactionService2;
+    private final FeatureFlags featureFlags;
 
     public void hello() {
-        longTransactionService.execute(new BaseEntity());
+
+        final boolean enable = featureFlags.isEnable("feature-name");
+        if (enable) {
+            longTransactionService.execute(new BaseEntity());
+        } else {
+            longTransactionService2.execute(new BaseEntity());
+        }
     }
 }

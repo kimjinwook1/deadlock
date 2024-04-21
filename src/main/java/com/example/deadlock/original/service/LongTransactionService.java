@@ -1,6 +1,5 @@
 package com.example.deadlock.original.service;
 
-import com.example.deadlock.original.component.DooHandler;
 import com.example.deadlock.original.domain.*;
 import com.example.deadlock.original.external.ExternalApi;
 import com.example.deadlock.original.external.ExternalApi2;
@@ -17,7 +16,7 @@ public class LongTransactionService {
     private final ExternalApi2 externalApi2;
 
     private final QueryHandler queryHandler;
-    private final SaveHandler saveHandler = new SaveHandler(this);
+    private final SaveHandler saveHandler;
 
     public void execute(BaseEntity base) {
         if (base.isAlreadyCompleted()) return;
