@@ -1,6 +1,8 @@
 package com.example.deadlock.original.service;
 
-import com.example.deadlock.original.component.*;
+import com.example.deadlock.original.component.DooComponent;
+import com.example.deadlock.original.component.DooHandler;
+import com.example.deadlock.original.component.FooComponent;
 import com.example.deadlock.original.domain.*;
 import com.example.deadlock.original.external.ExternalApi;
 import com.example.deadlock.original.external.ExternalApi2;
@@ -8,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,34 +34,63 @@ public class LongTransactionService {
         if (base.isAlreadyCompleted()) return;
         final String code = base.getCode();
         final Child child = getChild(code);
-        base.setData(child.getData());
+
+        // query
+        List<Doo> dooAlllist = new ArrayList<>();
+
+        final RootEntity rootEntity = rootRepository.findById(base.getRootId()).orElseThrow();
 
         final List<Foo> fooList = fooComponent.list(base.getFoo());
         for (Foo foo : fooList) {
-
             final List<Doo> dooList = dooComponent.list(foo.getId());
+            dooAlllist.addAll(dooList);
+        }
 
-            for (Doo doo : dooList) {
-                final Long id = doo.getId();
-                final Jo jo = joRepository.findById(id).orElseThrow(() -> new RuntimeException("not found"));
-                jo.handle(doo.getJoData());
+        List<DooJo> dooJoList = new ArrayList<>();
+        for (Doo doo : dooAlllist) {
+            final Long id = doo.getId();
+            final Jo jo = joRepository.findById(id).orElseThrow(() -> new RuntimeException("not found"));
+            dooJoList.add(new DooJo(jo, doo));
+        }
 
-                doo.cool();
-            }
-            dooList.forEach(doo -> dooHandler.save(doo));
+        // command
+        base.setData(child.getData());
+        for (DooJo dooJo : dooJoList) {
+            final Jo jo = dooJo.jo;
+            final Doo doo = dooJo.doo;
+            jo.handle(doo.getJoData());
+        }
+        for (Doo doo : dooAlllist) {
+            doo.cool();
+        }
+        base.complete();
+        rootEntity.complete();
+        for (Foo foo : fooList) {
             foo.complete();
         }
-        externalApi.call(base, child);
 
-        base.complete();
-        final RootEntity rootEntity = rootRepository.findById(base.getRootId()).orElseThrow();
-        rootEntity.complete();
+        // save
+        for (Doo doo : dooAlllist) {
+            dooHandler.save(doo);
+        }
+
         rootRepository.save(rootEntity);
+        externalApi.call(base, child);
         externalApi2.call(rootEntity.getId());
     }
 
     private Child getChild(String code) {
         return childRepository.findByCode(code).orElseThrow(() -> new RuntimeException("not found"));
+    }
+
+    private class DooJo {
+        private final Jo jo;
+        private final Doo doo;
+
+        public DooJo(final Jo jo, final Doo doo) {
+            this.jo = jo;
+            this.doo = doo;
+        }
     }
 
 }
