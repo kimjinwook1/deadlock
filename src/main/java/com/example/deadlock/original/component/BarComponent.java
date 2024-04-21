@@ -9,7 +9,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-class BarComponent {
+public class BarComponent {
     private final DooComponent dooComponent;
     private final DooExecutor dooExecutor;
     private final DooHandler dooHandler;
@@ -17,6 +17,6 @@ class BarComponent {
     public void execute(Foo foo) {
         final List<Doo> dooList = dooComponent.list(foo.getId());
         dooExecutor.doIt(dooList);
-        dooList.forEach(doo -> dooHandler.handle(doo));
+        dooList.forEach(doo -> dooHandler.save(doo));
     }
 }

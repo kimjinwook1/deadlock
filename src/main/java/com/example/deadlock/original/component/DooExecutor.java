@@ -10,7 +10,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-class DooExecutor {
+public class DooExecutor {
     private final JoRepository joRepository;
 
     public void doIt(List<Doo> dooList) {
