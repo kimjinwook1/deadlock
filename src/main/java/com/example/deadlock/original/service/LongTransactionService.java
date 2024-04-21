@@ -13,17 +13,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LongTransactionService {
 
-    private final RootRepository rootRepository;
-    private final JoRepository joRepository;
-    private final FooRepository fooRepository;
-    private final BaseEntityRepository baseEntityRepository;
-
-    private final DooHandler dooHandler;
-
     private final ExternalApi externalApi;
     private final ExternalApi2 externalApi2;
 
     private final QueryHandler queryHandler;
+    private final SaveHandler saveHandler = new SaveHandler(this);
 
     public void execute(BaseEntity base) {
         if (base.isAlreadyCompleted()) return;
@@ -54,21 +48,9 @@ public class LongTransactionService {
         }
 
         // save
-        rootRepository.save(rootEntity);
         externalApi.call(base, child);
         externalApi2.call(rootEntity.getId());
-        for (Doo doo : dooAlllist) {
-            dooHandler.save(doo);
-        }
-        for (Foo foo : fooList) {
-            fooRepository.save(foo);
-        }
-        baseEntityRepository.save(base);
-        for (DooJo dooJo : dooJoList) {
-            final Jo jo = dooJo.getJo();
-            joRepository.save(jo);
-        }
-
+        saveHandler.extracted(base, rootEntity, dooAlllist, fooList, dooJoList);
     }
 
 }
